@@ -34,9 +34,12 @@ def compute_exits(
         lambda s: sma(s, sma_period)
     )
     if exit_type == "trailing_stop_atr":
-        prices["atr_14"] = prices.groupby("ticker", group_keys=False).apply(
-            lambda g: atr(g["high_ars_raw"], g["low_ars_raw"], g["close_ars_raw"], atr_period)
-        )
+        prices["atr_14"] = 0.0
+        for ticker, grp in prices.groupby("ticker"):
+            idx = grp.index
+            prices.loc[idx, "atr_14"] = atr(
+                grp["high_ars_raw"], grp["low_ars_raw"], grp["close_ars_raw"], atr_period
+            ).values
 
     results = []
     for _, entry in entry_log.iterrows():
