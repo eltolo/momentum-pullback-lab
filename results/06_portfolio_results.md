@@ -11,8 +11,13 @@
 - Avg net return: `0.0028`
 - Cumulative gross return: `1.2066`
 - Cumulative net return: `0.0805`
-
-## All trades (base scenario)
+- **Total return (NAV):** `0.1438`
+- **CAGR:** `0.0265`
+- **Max drawdown:** `-0.1161`
+- **Annualized vol:** `0.0496`
+- **Avg exposure:** `3.00%`
+- **Underwater days:** `626`
+- **Profit factor:** `1.18`
 
 | Entry | Ticker | Exit | Reason | Days | Gross | Net |
 | --- | --- | --- | --- | --- | --- | --- |

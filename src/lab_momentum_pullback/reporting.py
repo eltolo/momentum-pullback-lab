@@ -107,15 +107,22 @@ def write_exit_report(exit_df: pd.DataFrame, target_path: Path) -> None:
 def write_portfolio_report(scenarios: dict[str, Any], trades: pd.DataFrame, target_path: Path) -> None:
     lines = ["# 06 Portfolio Results", "", "## Cost scenarios", ""]
     for sc_name, sc_data in sorted(scenarios.items()):
-        lines.extend([f"### {sc_data['scenario_name']} ({sc_data['round_trip_cost']*100:.1f}% rt)", "",
-                      f"- Total trades: `{sc_data['total_trades']}`",
-                      f"- Gross win rate: `{sc_data['win_rate_gross']:.1%}`",
-                      f"- Net win rate: `{sc_data['win_rate_net']:.1%}`",
-                      f"- Avg gross return: `{sc_data['avg_gross_return']:.4f}`",
-                      f"- Avg net return: `{sc_data['avg_net_return']:.4f}`",
-                      f"- Cumulative gross return: `{sc_data['cumulative_gross_return']:.4f}`",
-                      f"- Cumulative net return: `{sc_data['cumulative_net_return']:.4f}`", ""])
-    lines.append("## All trades (base scenario)"); lines.append("")
+        lines.extend([f"### {sc_name} ({sc_data.get('round_trip_cost',0)*100:.1f}% rt)", "",
+                      f"- Total trades: `{sc_data.get('total_trades',0)}`",
+                      f"- Gross win rate: `{sc_data.get('win_rate_gross',0):.1%}`",
+                      f"- Net win rate: `{sc_data.get('win_rate_net',0):.1%}`",
+                      f"- Avg gross return: `{sc_data.get('avg_gross_return',0):.4f}`",
+                      f"- Avg net return: `{sc_data.get('avg_net_return',0):.4f}`",
+                      f"- Cumulative gross return: `{sc_data.get('cumulative_gross_return',0):.4f}`",
+                      f"- Cumulative net return: `{sc_data.get('cumulative_net_return',0):.4f}`",
+                      f"- **Total return (NAV):** `{sc_data.get('total_return_pct',0):.4f}`",
+                      f"- **CAGR:** `{sc_data.get('cagr',0):.4f}`",
+                      f"- **Max drawdown:** `{sc_data.get('max_drawdown',0):.4f}`",
+                      f"- **Annualized vol:** `{sc_data.get('annualized_volatility',0):.4f}`",
+                      f"- **Avg exposure:** `{sc_data.get('avg_exposure',0):.2%}`",
+                      f"- **Underwater days:** `{sc_data.get('underwater_days',0)}`",
+                      f"- **Profit factor:** `{sc_data.get('profit_factor',0):.2f}`",
+                      ""])
     base = trades[trades["cost_scenario"] == "base"].copy() if not trades.empty else pd.DataFrame()
     if not base.empty:
         cols = [("entry_date","Entry"),("ticker","Ticker"),("exit_date","Exit"),("exit_reason","Reason"),
@@ -147,10 +154,16 @@ def write_final_decision(benchmarks: pd.DataFrame, portfolio_results: dict[str, 
     base = portfolio_results.get("scenarios", {}).get("base", {})
     if base:
         strat_cum = base.get("cumulative_net_return", 0.0)
+        strat_nav = base.get("total_return_pct", 0.0)
+        cagr = base.get("cagr", 0.0)
+        max_dd = base.get("max_drawdown", 0.0)
         lines.append(f"- Strategy net (base cost 1.4% rt): `{strat_cum:.4f}`")
+        lines.append(f"- **NAV return:** `{strat_nav:.4f}`")
+        lines.append(f"- **CAGR:** `{cagr:.4f}`")
+        lines.append(f"- **Max DD:** `{max_dd:.4f}`")
         lines.append(f"- Trades: `{base.get('total_trades', 0)}`")
         lines.append(f"- Net win rate: `{base.get('win_rate_net', 0.0):.1%}`"); lines.append("")
-        if strat_cum > bench_cum and base.get("win_rate_net", 0) > 0.4:
+        if strat_nav > bench_cum and base.get("win_rate_net", 0) > 0.4:
             decision = "APPROVED_FOR_PAPER"
         elif strat_cum > 0:
             decision = "REQUIRES_MORE_RESEARCH"
