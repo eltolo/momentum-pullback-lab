@@ -180,7 +180,7 @@ def write_attribution_report(variants: dict[str, Any], benchmarks: pd.DataFrame,
             ("avg_gross_return","Avg Gross"),("cumulative_gross_return","Cum Gross"),
             ("cumulative_net_return","Cum Net"),("net_wins","Net W")]
     rows = []
-    for vid in ["A","B","C","D"]:
+    for vid in ["A","B","C","D","E"]:
         v = variants.get(vid, {})
         rows.append({"variant":vid,"label":v.get("label",""),"total_trades":v.get("total_trades",0),
                      "gross_wins":v.get("gross_wins",0),
@@ -195,7 +195,7 @@ def write_attribution_report(variants: dict[str, Any], benchmarks: pd.DataFrame,
                   "- **A vs C**: compares SMA5 exit vs trailing ATR stop",
                   "- **D alone**: answers whether momentum-only with rebalancing is viable",
                   "", "## Detailed exit breakdown", ""])
-    for vid in ["A","B","C","D"]:
+    for vid in ["A","B","C","D","E"]:
         v = variants.get(vid, {}); er = v.get("exit_reasons", {})
         if er:
             lines.append(f"### {vid} — {v.get('label', '')}")
