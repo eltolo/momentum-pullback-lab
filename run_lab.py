@@ -18,6 +18,7 @@ from lab_momentum_pullback.data_loader import load_price_data
 from lab_momentum_pullback.mep import load_canonical_mep
 from lab_momentum_pullback.portfolio import simulate_portfolio
 from lab_momentum_pullback.reporting import (
+    write_attribution_report,
     write_benchmark_report,
     write_confirmation_report,
     write_exit_report,
@@ -26,8 +27,8 @@ from lab_momentum_pullback.reporting import (
     write_signal_report,
     write_walkforward_report,
 )
+from lab_momentum_pullback.attribution import run_attribution
 from lab_momentum_pullback.signals import compute_benchmarks, compute_signals
-
 
 def _load_panel() -> tuple:
     from lab_momentum_pullback.adjustments import execute_data_audit
@@ -48,7 +49,7 @@ def _run_portfolio() -> tuple:
 
 def main() -> int:
     ps = ["data_audit", "benchmarks", "pullback_signals", "entry_confirmation",
-          "exit_rules", "portfolio_results", "walkforward", "final_decision"]
+          "exit_rules", "portfolio_results", "walkforward", "attribution", "final_decision"]
     parser = argparse.ArgumentParser(description="Momentum pullback lab entrypoint")
     parser.add_argument("--check", action="store_true")
     parser.add_argument("--phase", choices=ps, help="Run a specific lab phase")
@@ -154,6 +155,22 @@ def main() -> int:
                                "cumulative_net_return": sc.get("cumulative_net_return", 0.0)})
         write_walkforward_report(wf_results, target)
         print(json.dumps({"ok": True, "stage": "walkforward", "windows": wf_results, "report_path": str(target)}, indent=2))
+        return 0
+
+    # --- attribution ---
+    if args.phase == "attribution":
+        panel, config, audit = _load_panel()
+        config["costs"] = config.get("costs", {})
+        variants = run_attribution(panel, config)
+        benchmarks = compute_benchmarks(panel, config)
+        target = ROOT / "results" / "09_attribution.md"
+        write_attribution_report(variants, benchmarks, target)
+        summary = {vid: {"label": v["label"], "total_trades": v["total_trades"],
+                          "cum_net": v["cumulative_net_return"],
+                          "cum_gross": v["cumulative_gross_return"]}
+                   for vid, v in variants.items()}
+        print(json.dumps({"ok": True, "stage": "attribution", "variants": summary,
+                          "report_path": str(target)}, indent=2))
         return 0
 
     # --- final_decision ---

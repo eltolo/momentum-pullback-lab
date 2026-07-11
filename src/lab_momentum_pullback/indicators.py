@@ -34,3 +34,14 @@ def high_since(series: pd.Series, lookback: int) -> pd.Series:
 def close_above_sma(close: pd.Series, period: int) -> pd.Series:
     """Binary: 1 when close > SMA(period)."""
     return (close > sma(close, period)).astype(int)
+
+
+def atr(high: pd.Series, low: pd.Series, close: pd.Series, period: int = 14) -> pd.Series:
+    """Average True Range."""
+    prev_close = close.shift(1)
+    tr = pd.concat([
+        (high - low).abs(),
+        (high - prev_close).abs(),
+        (low - prev_close).abs(),
+    ], axis=1).max(axis=1)
+    return tr.rolling(window=period, min_periods=period).mean()

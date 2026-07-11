@@ -4,7 +4,7 @@ from typing import Any
 
 import pandas as pd
 
-from .indicators import sma
+from .indicators import atr, sma
 
 
 def compute_exits(
@@ -14,71 +14,99 @@ def compute_exits(
 ) -> pd.DataFrame:
     """For each entry, find the exit date and reason.
 
-    entry_log: columns [date, ticker, entry_price, entry_close_usd]
-    price_panel: daily prices with ticker, date, close_usd_mep_adj, sma columns
-
-    Returns: same rows with exit_date, exit_price, exit_reason, holding_days added.
+    Supports exit types:
+    - close_above_sma: exit when close > SMA(period)
+    - fixed_days: exit after N holding days
+    - trailing_stop_atr: trailing stop at N x ATR from highest close since entry
     """
     exit_cfg = config.get("exit", {})
     exit_type = str(exit_cfg.get("type", "close_above_sma"))
     sma_period = int(exit_cfg.get("sma_period", 5))
     max_hold = int(exit_cfg.get("max_holding_days", 15))
+    min_hold = int(exit_cfg.get("min_holding_days", 0))
+    atr_multiple = float(exit_cfg.get("trailing_stop_atr", 2.5))
+    atr_period = int(exit_cfg.get("atr_period", 14))
 
     prices = price_panel.copy().sort_values(["ticker", "date"])
 
-    # Precompute exit SMA per ticker
+    # Precompute indicators
     prices["exit_sma"] = prices.groupby("ticker")["close_usd_mep_adj"].transform(
         lambda s: sma(s, sma_period)
     )
+    if exit_type == "trailing_stop_atr":
+        prices["atr_14"] = prices.groupby("ticker", group_keys=False).apply(
+            lambda g: atr(g["high_ars_raw"], g["low_ars_raw"], g["close_ars_raw"], atr_period)
+        )
 
     results = []
     for _, entry in entry_log.iterrows():
         ticker = entry["ticker"]
         entry_date = entry["date"]
         ticker_prices = prices.loc[
-            (prices["ticker"] == ticker)
-            & (prices["date"] > entry_date)
+            (prices["ticker"] == ticker) & (prices["date"] > entry_date)
         ].sort_values("date")
+        entry_price = float(entry["entry_price"])
 
         exit_date = None
         exit_price = None
         exit_reason = None
         holding_days = 0
+        peak = entry_price
 
         for _, row in ticker_prices.iterrows():
             holding_days += 1
-            current_date = row["date"]
-            current_close = row["close_usd_mep_adj"]
+            current_close = float(row["close_usd_mep_adj"])
+            current_high = float(row.get("high_ars_raw", current_close))
 
-            # Exit condition 1: close_above_sma(5)
-            if exit_type == "close_above_sma" and row["exit_sma"] is not None and not pd.isna(row["exit_sma"]):
-                if current_close > row["exit_sma"]:
-                    exit_date = current_date
+            # Min holding days barrier
+            if holding_days < min_hold:
+                continue
+
+            # Exit: close_above_sma(5)
+            if exit_type == "close_above_sma" and not pd.isna(row.get("exit_sma")):
+                if current_close > float(row["exit_sma"]):
+                    exit_date = row["date"]
                     exit_price = current_close
                     exit_reason = "close_above_sma5"
                     break
 
-            # Exit condition 2: max holding days
-            if holding_days >= max_hold:
-                exit_date = current_date
+            # Exit: fixed_days
+            if exit_type == "fixed_days" and holding_days >= max_hold:
+                exit_date = row["date"]
                 exit_price = current_close
-                exit_reason = "max_holding_days"
+                exit_reason = "fixed_days"
+                break
+
+            # Exit: trailing_stop_atr
+            if exit_type == "trailing_stop_atr" and not pd.isna(row.get("atr_14")):
+                peak = max(peak, current_high)
+                stop_level = peak - float(row["atr_14"]) * atr_multiple
+                if current_close < stop_level:
+                    exit_date = row["date"]
+                    exit_price = current_close
+                    exit_reason = "trailing_stop_atr"
+                    break
+
+            # Exit: max holding days (universal fallback)
+            if holding_days >= max_hold:
+                exit_date = row["date"]
+                exit_price = current_close
+                exit_reason = f"max_holding_{max_hold}d"
                 break
 
         if exit_date is None:
-            # Use last available price
             if not ticker_prices.empty:
                 last = ticker_prices.iloc[-1]
                 exit_date = last["date"]
-                exit_price = last["close_usd_mep_adj"]
+                exit_price = float(last["close_usd_mep_adj"])
                 exit_reason = "end_of_data"
                 holding_days = len(ticker_prices)
 
         results.append({
             "date": entry_date,
             "ticker": ticker,
-            "entry_price": entry["entry_price"],
-            "entry_close_usd": entry.get("entry_close_usd", entry["entry_price"]),
+            "entry_price": entry_price,
+            "entry_close_usd": float(entry.get("entry_close_usd", entry_price)),
             "exit_date": exit_date,
             "exit_price": exit_price,
             "exit_reason": exit_reason,
