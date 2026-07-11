@@ -1,0 +1,108 @@
+{
+  "project": "momentum-pullback-argentina-usa",
+  "source_spec": "lab_momentum_pullback_argentina_usa.md",
+  "generated_at": "2026-07-11T11:33:43-03:00",
+  "workflow": "tolosa-ticket-first",
+  "frontier_rule": "Work tickets whose blockers are fully completed.",
+  "tickets": [
+    {
+      "id": "T266",
+      "shared_ticket": "/home/tato/shared/tickets/TICKET-266.md",
+      "title": "Scaffold the momentum pullback lab",
+      "status": "completed",
+      "blocked_by": [],
+      "deliverables": [
+        "Repository scaffold",
+        "Base YAML configs",
+        "Executable config validation entrypoint",
+        "README with lab workflow"
+      ],
+      "acceptance": [
+        "Suggested architecture from the spec exists in minimal usable form",
+        "No strategy parameters are hardcoded outside config files",
+        "python run_lab.py --check passes"
+      ]
+    },
+    {
+      "id": "T267",
+      "shared_ticket": "/home/tato/shared/tickets/TICKET-267.md",
+      "title": "Implement data audit and USD MEP normalization",
+      "status": "completed",
+      "blocked_by": [
+        "T266"
+      ],
+      "deliverables": [
+        "Data loaders for BYMA daily bars and MEP series",
+        "Critical data-quality gates",
+        "01_data_quality_report.md"
+      ],
+      "acceptance": [
+        "The lab stops on critical data errors",
+        "USD MEP normalized prices are reproducible",
+        "Asset coverage and exclusions are reported"
+      ]
+    },
+    {
+      "id": "T268",
+      "shared_ticket": "/home/tato/shared/tickets/TICKET-268.md",
+      "title": "Build benchmarks and baseline signal engine",
+      "status": "pending",
+      "blocked_by": [
+        "T267"
+      ],
+      "deliverables": [
+        "Benchmarks in ARS and USD MEP",
+        "Base trend+momentum+pullback+confirmation signal engine",
+        "02_benchmarks.md",
+        "03_pullback_signals.md",
+        "04_entry_confirmation.md"
+      ],
+      "acceptance": [
+        "Signals avoid look-ahead",
+        "Ranking is used as a filter, not a daily rotation rule",
+        "Benchmark outputs are reproducible"
+      ]
+    },
+    {
+      "id": "T269",
+      "shared_ticket": "/home/tato/shared/tickets/TICKET-269.md",
+      "title": "Add exits, costs, portfolio logic, and evaluation",
+      "status": "pending",
+      "blocked_by": [
+        "T268"
+      ],
+      "deliverables": [
+        "Exit variants",
+        "Cost model",
+        "Portfolio construction",
+        "05_exit_rules.md",
+        "06_portfolio_results.md"
+      ],
+      "acceptance": [
+        "Net results include conservative Argentine cost scenarios",
+        "Trade-level outputs explain turnover and cost erosion",
+        "The base version is rejected early if it does not clear costs"
+      ]
+    },
+    {
+      "id": "T270",
+      "shared_ticket": "/home/tato/shared/tickets/TICKET-270.md",
+      "title": "Run robustness, USA transfer test, and final decision",
+      "status": "pending",
+      "blocked_by": [
+        "T269"
+      ],
+      "deliverables": [
+        "Walk-forward evaluation",
+        "Monte Carlo and stress tests",
+        "10_usa_transfer_test.md",
+        "FINAL_DECISION.md"
+      ],
+      "acceptance": [
+        "Rules are frozen before the USA transfer run",
+        "Approval gates match the spec",
+        "Final decision is one of APPROVED_FOR_PAPER, REQUIRES_MORE_RESEARCH, REJECTED"
+      ]
+    }
+  ]
+}

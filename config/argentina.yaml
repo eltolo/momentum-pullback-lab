@@ -1,0 +1,54 @@
+market: argentina
+currency: USD_MEP
+data:
+  start_date: 2021-03-29
+  price_db_path: /home/tato/proyectos/MPC_Conexar/historico_merval.db
+  price_table: historico_diario
+  fx_db_path: /home/tato/proyectos/MPC_Conexar/historico_merval.db
+  fx_source_hierarchy:
+    - mep_diario
+    - bullmarket_resumen
+    - ccl_diario
+universe:
+  - GGAL
+  - YPFD
+  - PAMP
+  - BMA
+  - BBAR
+  - TXAR
+  - TGSU2
+  - CEPU
+  - ALUA
+  - BYMA
+trend:
+  price_above_sma: 200
+  fast_sma: 50
+  slow_sma: 200
+momentum:
+  lookback: 126
+  min_percentile: 60
+  min_absolute_return: 0.0
+pullback:
+  type: RSI2
+  threshold: 10
+confirmation:
+  type: close_above_previous_high
+  execute_on: next_open
+exit:
+  type: close_above_sma
+  sma_period: 5
+  max_holding_days: 15
+risk:
+  max_positions: 3
+  risk_per_trade: 0.005
+  max_position_weight: 0.20
+  leverage: 1.0
+  reserve_cash_when_slots_empty: true
+liquidity:
+  avg_dollar_volume_20d_min: null
+  avg_dollar_volume_window: 20
+  capital_scales_usd_mep:
+    - 5000
+    - 10000
+    - 15000
+  max_participation_of_daily_volume: 0.01

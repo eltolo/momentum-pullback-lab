@@ -1,0 +1,22 @@
+broker: BYMA
+scenarios:
+  optimistic:
+    round_trip_total: 0.008
+  base:
+    round_trip_total: 0.014
+  conservative:
+    round_trip_total: 0.018
+  stress:
+    round_trip_total: 0.025
+components:
+  commission_buy: null
+  commission_sell: null
+  exchange_fees: null
+  taxes: null
+  spread: null
+  slippage: null
+rules:
+  min_gross_to_cost_multiple: 3.0
+  max_cost_erosion: 0.40
+  fragile_cost_erosion: 0.25
+  must_remain_positive_if_base_cost_doubles: true

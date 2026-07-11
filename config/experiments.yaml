@@ -1,0 +1,46 @@
+phases:
+  - id: 1
+    name: data_audit
+    output: results/01_data_quality_report.md
+  - id: 2
+    name: benchmarks
+    output: results/02_benchmarks.md
+  - id: 3
+    name: pullback_signals
+    output: results/03_pullback_signals.md
+  - id: 4
+    name: entry_confirmation
+    output: results/04_entry_confirmation.md
+  - id: 5
+    name: exit_rules
+    output: results/05_exit_rules.md
+  - id: 6
+    name: portfolio_results
+    output: results/06_portfolio_results.md
+  - id: 7
+    name: walkforward
+    output: results/07_walkforward.md
+  - id: 8
+    name: robustness
+    output: results/08_robustness.md
+  - id: 9
+    name: montecarlo
+    output: results/09_montecarlo.md
+  - id: 10
+    name: usa_transfer_test
+    output: results/10_usa_transfer_test.md
+  - id: 11
+    name: final_decision
+    output: results/FINAL_DECISION.md
+required_order:
+  - data_audit
+  - benchmarks
+  - pullback_signals
+  - entry_confirmation
+  - exit_rules
+  - portfolio_results
+  - walkforward
+  - robustness
+  - montecarlo
+  - usa_transfer_test
+  - final_decision

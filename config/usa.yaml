@@ -1,0 +1,13 @@
+market: usa
+currency: USD
+universe:
+  - SPY
+benchmark: SPY
+liquidity:
+  avg_dollar_volume_20d_min: null
+  max_participation_of_daily_volume: 0.01
+execution:
+  default_fill: next_open
+notes:
+  - Freeze Argentine rules before running this profile.
+  - Recalibrate only costs, liquidity, sizing, universe, and schedule constraints.
