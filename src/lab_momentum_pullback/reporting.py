@@ -216,3 +216,104 @@ def write_attribution_report(variants: dict[str, Any], benchmarks: pd.DataFrame,
             lines.extend(_markdown_table(erows, [("reason","Exit reason"),("count","Trades")]))
             lines.append("")
     target_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+
+
+def write_incremental_report(models: list[dict[str, Any]], target_path: Path) -> None:
+    lines = ["# 11 Incremental Attribution M0–M4", "",
+             "Each model adds exactly one component. Trailing ATR exit (2.5x) for all.", "",
+             "## Models", ""]
+    cols = [("model_id","Model"),("model_label","Components"),("total_trades","Trades"),
+            ("cumulative_gross_return","Cum Gross"),("cumulative_net_return","Cum Net"),
+            ("avg_net_return","Avg Net"),("delta_trades","Δ Trades"),("delta_cum_net","Δ Cum Net")]
+    rows = [{k: m.get(k) for k in [c[0] for c in cols]} for m in models]
+    for r in rows:
+        for k in ("cumulative_gross_return","cumulative_net_return","avg_net_return","delta_cum_net"):
+            r[k] = f'{r.get(k,0):.4f}' if isinstance(r.get(k), (int,float)) else r.get(k,0)
+    lines.extend(_markdown_table(rows, cols))
+    lines.extend(["", "## Key questions answered", "",
+                  "- **M0 → M1**: How much does momentum filtering add?",
+                  "- **M1 → M2**: How much does RSI2 pullback add?",
+                  "- **M2 → M3**: How much does close-above-prev-high confirmation add?",
+                  "- **M3 → M4**: How much does ATR filter add?",""])
+    target_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+
+
+def write_atr_robustness_report(results: list[dict[str, Any]], target_path: Path) -> None:
+    lines = ["# 12 ATR Trailing Stop Robustness", "",
+             "Test trailing ATR at 2.0–4.0 on variant E config.", "","## Results",""]
+    cols = [("atr_multiple","ATR"),("total_trades","Trades"),("gross_wins","Gross W"),("net_wins","Net W"),
+            ("cumulative_gross_return","Cum Gross"),("cumulative_net_return","Cum Net"),("avg_net_return","Avg Net")]
+    rows = []
+    for r in sorted(results, key=lambda x: x.get("atr_multiple", 0)):
+        rows.append({k: r.get(k, 0) for k in [c[0] for c in cols]})
+    for r in rows:
+        for k in ("cumulative_gross_return","cumulative_net_return","avg_net_return"):
+            r[k] = f'{r.get(k,0):.4f}' if isinstance(r.get(k), (int,float)) else r.get(k,0)
+    lines.extend(_markdown_table(rows, cols))
+    lines.extend(["", "## Stability assessment", "",
+                  "- Similar results across 2.0–4.0 → robust exit.",
+                  "- Only one value works → fragile / overfit.",""])
+    target_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+
+
+def write_walkforward_variant_report(results: list[dict[str, Any]], variant_label: str, target_path: Path) -> None:
+    lines = [f"# 13 Walk-Forward: {variant_label}", ""]
+    cols = [("window","Window"),("total_trades","Trades"),
+            ("cumulative_net_return","Cum Net"),("avg_net_return","Avg Net")]
+    rows = [{k: r.get(k) for k in [c[0] for c in cols]} for r in results]
+    for r in rows:
+        for k in ("cumulative_net_return","avg_net_return"):
+            r[k] = f'{r.get(k,0):.4f}' if isinstance(r.get(k), (int,float)) else r.get(k,0)
+    lines.extend(_markdown_table(rows, cols))
+    target_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+
+
+def write_method_validation_report(
+    versions, incremental, atr_robust, wf_variant_e, benchmarks, target_path,
+) -> None:
+    bench_cum = float(benchmarks.iloc[-1]["cum_ret_usd"]) if not benchmarks.empty else 0.0
+    lines = ["# 10 Method Validation Report", "", "## Status: REQUIRES_METHOD_VALIDATION (in progress)", "",
+             "## Benchmark", f"- Buy & hold USD MEP: `{bench_cum:.4f}`", "",
+             "## Attribution variants (A–E)", ""]
+    cols = [("variant","Var"),("label","Config"),("total_trades","Trades"),
+            ("cum_gross","Cum Gross"),("cum_net","Cum Net")]
+    rows = []
+    for vid in ["A","B","C","D","E"]:
+        v = versions.get(vid, {})
+        rows.append({"variant":vid,"label":v.get("label",""),"total_trades":v.get("total_trades",0),
+                     "cum_gross":f'{v.get("cumulative_gross_return",0):.4f}',
+                     "cum_net":f'{v.get("cumulative_net_return",0):.4f}'})
+    lines.extend(_markdown_table(rows, cols))
+
+    lines.extend(["", "## Incremental attribution M0–M4", ""])
+    cols_in = [("model_id","Model"),("model_label","Components"),("total_trades","Trades"),
+               ("cum_net","Cum Net"),("delta_cum_net","Δ Cum Net")]
+    rows_in = []
+    for m in incremental:
+        rows_in.append({"model_id":m.get("model_id"),"model_label":m.get("model_label"),
+                        "total_trades":m.get("total_trades",0),
+                        "cum_net":f'{m.get("cumulative_net_return",0):.4f}',
+                        "delta_cum_net":f'{m.get("delta_cum_net",0):.4f}'})
+    lines.extend(_markdown_table(rows_in, cols_in))
+
+    lines.extend(["", "## ATR trailing robustness", ""])
+    cols_a = [("atr_multiple","ATR"),("total_trades","Trades"),("cum_net","Cum Net")]
+    rows_a = []
+    for r in sorted(atr_robust, key=lambda x: x.get("atr_multiple",0)):
+        rows_a.append({"atr_multiple":r.get("atr_multiple"),"total_trades":r.get("total_trades",0),
+                       "cum_net":f'{r.get("cumulative_net_return",0):.4f}'})
+    lines.extend(_markdown_table(rows_a, cols_a))
+
+    lines.extend(["", "## Walk-forward: variant E", ""])
+    cols_w = [("window","Window"),("total_trades","Trades"),("cum_net","Cum Net")]
+    rows_w = []
+    for r in wf_variant_e:
+        rows_w.append({"window":r.get("window"),"total_trades":r.get("total_trades",0),
+                       "cum_net":f'{r.get("cumulative_net_return",0):.4f}'})
+    lines.extend(_markdown_table(rows_w, cols_w))
+    lines.extend(["", "## Next steps", "",
+                  "1. Audit backtester accounting (cash, costs, capital)",
+                  "2. Normalize benchmarks by exposure",
+                  "3. Test with conservative cost scenarios",
+                  "4. Paper trading eligibility assessment",""])
+    target_path.write_text("\n".join(lines) + "\n", encoding="utf-8")

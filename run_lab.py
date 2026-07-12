@@ -19,15 +19,19 @@ from lab_momentum_pullback.mep import load_canonical_mep
 from lab_momentum_pullback.portfolio import simulate_portfolio
 from lab_momentum_pullback.reporting import (
     write_attribution_report,
+    write_atr_robustness_report,
     write_benchmark_report,
     write_confirmation_report,
     write_exit_report,
     write_final_decision,
+    write_incremental_report,
+    write_method_validation_report,
     write_portfolio_report,
     write_signal_report,
     write_walkforward_report,
+    write_walkforward_variant_report,
 )
-from lab_momentum_pullback.attribution import run_attribution
+from lab_momentum_pullback.attribution import run_attribution, run_atr_robustness, run_incremental, run_walkforward_variant
 from lab_momentum_pullback.signals import compute_benchmarks, compute_signals
 
 def _load_panel() -> tuple:
@@ -49,7 +53,8 @@ def _run_portfolio() -> tuple:
 
 def main() -> int:
     ps = ["data_audit", "benchmarks", "pullback_signals", "entry_confirmation",
-          "exit_rules", "portfolio_results", "walkforward", "attribution", "final_decision"]
+          "exit_rules", "portfolio_results", "walkforward", "attribution",
+          "incremental", "atr_robustness", "walkforward_e", "method_validation", "final_decision"]
     parser = argparse.ArgumentParser(description="Momentum pullback lab entrypoint")
     parser.add_argument("--check", action="store_true")
     parser.add_argument("--phase", choices=ps, help="Run a specific lab phase")
@@ -170,6 +175,74 @@ def main() -> int:
                           "cum_gross": v["cumulative_gross_return"]}
                    for vid, v in variants.items()}
         print(json.dumps({"ok": True, "stage": "attribution", "variants": summary,
+                          "report_path": str(target)}, indent=2))
+        return 0
+
+    # --- incremental ---
+    if args.phase == "incremental":
+        panel, config, audit = _load_panel()
+        config["costs"] = config.get("costs", {})
+        models = run_incremental(panel, config)
+        target = ROOT / "results" / "11_incremental.md"
+        write_incremental_report(models, target)
+        print(json.dumps({"ok": True, "stage": "incremental", "models": [
+            {"id": m["model_id"], "label": m["model_label"],
+             "trades": m["total_trades"], "cum_net": m["cumulative_net_return"],
+             "delta_net": m.get("delta_cum_net", 0)} for m in models],
+                          "report_path": str(target)}, indent=2))
+        return 0
+
+    # --- atr_robustness ---
+    if args.phase == "atr_robustness":
+        panel, config, audit = _load_panel()
+        config["costs"] = config.get("costs", {})
+        results = run_atr_robustness(panel, config)
+        target = ROOT / "results" / "12_atr_robustness.md"
+        write_atr_robustness_report(results, target)
+        print(json.dumps({"ok": True, "stage": "atr_robustness",
+                          "results": [{"atr": r["atr_multiple"], "trades": r["total_trades"],
+                                       "cum_net": r["cumulative_net_return"]} for r in results],
+                          "report_path": str(target)}, indent=2))
+        return 0
+
+    # --- walkforward_e ---
+    if args.phase == "walkforward_e":
+        panel, config, audit = _load_panel()
+        config["costs"] = config.get("costs", {})
+        vcfg = {
+            "entry": {"use_pullback": True, "use_confirmation": True, "min_atr_multiple": 2.5},
+            "exit": {"type": "trailing_stop_atr", "trailing_stop_atr": 2.5, "atr_period": 14,
+                     "max_holding_days": 20, "min_holding_days": 3},
+            "portfolio": {},
+        }
+        results = run_walkforward_variant(panel, config, vcfg)
+        target = ROOT / "results" / "13_walkforward_variant_e.md"
+        write_walkforward_variant_report(results, "Variant E", target)
+        print(json.dumps({"ok": True, "stage": "walkforward_e", "results": results,
+                          "report_path": str(target)}, indent=2))
+        return 0
+
+    # --- method_validation ---
+    if args.phase == "method_validation":
+        panel, config, audit = _load_panel()
+        config["costs"] = config.get("costs", {})
+        versions = run_attribution(panel, config)
+        incremental = run_incremental(panel, config)
+        atr_robust = run_atr_robustness(panel, config)
+        vcfg = {
+            "entry": {"use_pullback": True, "use_confirmation": True, "min_atr_multiple": 2.5},
+            "exit": {"type": "trailing_stop_atr", "trailing_stop_atr": 2.5, "atr_period": 14,
+                     "max_holding_days": 20, "min_holding_days": 3},
+            "portfolio": {},
+        }
+        wf_e = run_walkforward_variant(panel, config, vcfg)
+        benchmarks = compute_benchmarks(panel, config)
+        target = ROOT / "results" / "10_method_validation.md"
+        write_method_validation_report(versions, incremental, atr_robust, wf_e, benchmarks, target)
+        print(json.dumps({"ok": True, "stage": "method_validation",
+                          "incremental": [{k: v for k, v in m.items() if k != "trades"} for m in incremental],
+                          "atr_robustness": [{k: v for k, v in r.items() if k != "trades"} for r in atr_robust],
+                          "walkforward_e": [{k: v for k, v in r.items() if k != "trades"} for r in wf_e],
                           "report_path": str(target)}, indent=2))
         return 0
 
