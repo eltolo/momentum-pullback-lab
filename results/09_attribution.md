@@ -2,7 +2,7 @@
 
 ## Benchmark
 
-- Equal-weight buy & hold USD MEP: `4.3718`
+- Equal-weight buy & hold USD MEP: `4.4011`
 
 ## Variant comparison (all at base cost 1.4% rt)
 
@@ -11,7 +11,7 @@
 | A | Momentum + RSI2 / SMA5 | 51 | 40 | 0.0170 | 1.2066 | 0.0805 | 32 |
 | B | Momentum + RSI2 / 10d fixed | 51 | 31 | 0.0201 | 0.0336 | -0.4939 | 29 |
 | C | Momentum + RSI2 / trailing 2.5 ATR | 51 | 34 | 0.0183 | 1.2883 | 0.1205 | 25 |
-| D | Momentum only / monthly rebalance | 1078 | 561 | 0.0205 | 29.3337 | -1.0000 | 514 |
+| D | Momentum only / monthly rebalance | 1078 | 561 | 0.0205 | 28.4900 | -1.0000 | 514 |
 | E | Momentum + RSI2 + ATR filter / trailing 2.5 ATR | 45 | 31 | 0.0210 | 1.3304 | 0.2411 | 22 |
 
 ## What the comparison tells us
