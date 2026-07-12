@@ -10,9 +10,9 @@
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | A | Momentum + RSI2 / SMA5 | 51 | 40 | 0.0170 | 1.2066 | 0.0805 | 32 |
 | B | Momentum + RSI2 / 10d fixed | 51 | 31 | 0.0201 | 0.0336 | -0.4939 | 29 |
-| C | Momentum + RSI2 / trailing 2.5 ATR | 51 | 34 | 0.0183 | 1.2883 | 0.1205 | 25 |
+| C | Momentum + RSI2 / trailing 2.5 ATR | 51 | 22 | 0.0043 | -0.7606 | -0.8828 | 18 |
 | D | Momentum only / monthly rebalance | 1078 | 561 | 0.0205 | 28.4900 | -1.0000 | 514 |
-| E | Momentum + RSI2 + ATR filter / trailing 2.5 ATR | 45 | 31 | 0.0210 | 1.3304 | 0.2411 | 22 |
+| E | Momentum + RSI2 + ATR filter / trailing 2.5 ATR | 45 | 23 | 0.0135 | -0.3292 | -0.6427 | 21 |
 
 ## What the comparison tells us
 
@@ -47,5 +47,6 @@
 ### E — Momentum + RSI2 + ATR filter / trailing 2.5 ATR
 | Exit reason | Trades |
 | --- | --- |
-| trailing_stop_atr | 45 |
+| trailing_stop_atr | 31 |
+| max_holding_20d | 14 |
 

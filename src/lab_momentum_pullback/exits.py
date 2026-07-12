@@ -59,7 +59,10 @@ def compute_exits(
         for _, row in ticker_prices.iterrows():
             holding_days += 1
             current_close = float(row["close_usd_mep_adj"])
-            current_high = float(row.get("high_ars_raw", current_close))
+            close_ars = float(row["close_ars_raw"])
+            ratio = current_close / close_ars if close_ars > 0 else 1.0
+            # Convert high to USD terms for peak tracking
+            current_high = float(row.get("high_ars_raw", close_ars)) * ratio
 
             # Min holding days barrier
             if holding_days < min_hold:
@@ -82,8 +85,9 @@ def compute_exits(
 
             # Exit: trailing_stop_atr
             if exit_type == "trailing_stop_atr" and not pd.isna(row.get("atr_14")):
+                atr_usd = float(row["atr_14"]) * ratio
                 peak = max(peak, current_high)
-                stop_level = peak - float(row["atr_14"]) * atr_multiple
+                stop_level = peak - atr_usd * atr_multiple
                 if current_close < stop_level:
                     exit_date = row["date"]
                     exit_price = current_close
